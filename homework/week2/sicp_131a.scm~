@@ -1,0 +1,24 @@
+(define (product term a next b)
+	(if (> a b)
+		1
+		(* (term a)
+			 (product term (next a) next b))
+	)
+)
+
+(define (test-product)
+	(product
+		(lambda (x) (x))
+		2
+		(lambda (x) (+ x 1))
+		4)
+)
+
+(define (factorial a)
+	(product (lambda (x) (x))
+					 1
+					 (lambda (x) (+ x 1))
+					 a))
+
+(test-product)
+;(define (compute-pi

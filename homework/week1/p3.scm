@@ -1,0 +1,28 @@
+(define (switch sent)
+		(sentence (swtch-first (first sent)) (switch-rest (butfirst sent)))
+)
+
+(define (switch-rest sent)
+	(if (empty? sent)
+			'()
+			(sentence (swtch-one (first sent)) (switch-rest (butfirst sent)))
+	)
+)
+
+(define (swtch-first w)
+	(cond ((equal? w 'I) 'You)
+				((equal? w 'You) 'I)
+				((equal? w 'me) 'you)
+				(else w)
+	)
+)
+
+(define (swtch-one w)
+	(cond ((equal? w 'I) 'You)
+				((equal? w 'You) 'me)
+				((equal? w 'me) 'you)
+				(else w)
+	)
+)
+
+(display (switch '(You told me that I should wake you up)))
