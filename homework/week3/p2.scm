@@ -1,0 +1,16 @@
+(define (next-perf num)
+	(if (= (sum-of-factors num) num)
+		num
+		(next-perf (+ 1 num))
+	)
+)
+
+(define (sum-of-factors num)
+	(define (iter i sum)
+		(cond ((= i num) sum)
+					((= (modulo num i) 0) (iter (+ 1 i) (+ sum i)))
+					(else (iter (+ 1 i) sum))
+		)
+	)
+	(iter 1 0)
+)
