@@ -1,5 +1,37 @@
 ;; Code for CS61A project 2 -- picture language
 
+(define (beside painter1 painter2)
+  (let ((split-point (make-vect 0.5 0.0)))
+    (let ((paint-left
+	   (transform-painter painter1
+			      (make-vect 0.0 0.0)
+			      split-point
+			      (make-vect 0.0 1.0)))
+	  (paint-right
+	   (transform-painter painter2
+			      split-point
+			      (make-vect 1.0 0.0)
+			      (make-vect 0.5 1.0))))
+      (lambda (frame)
+	(paint-left frame)
+	(paint-right frame)))))
+
+(define (below painter1 painter2)
+	(let ((split-point (make-vect 0.0 0.5)))
+	(let ((paint-below
+			(transform-painter painter1
+				(make-vect 0.0 0.0)
+				(make-vect 1.0 0.0)
+				split-point))
+		  (paint-above
+			(transform-painter painter2
+				split-point
+				(make-vect 1.0 0.5)
+				(make-vect 0.0 1.0))))
+		(lambda (frame)
+		  (paint-below frame)
+		  (paint-above frame)))))
+
 (define (flipped-pairs painter)
   (let ((painter2 (beside painter (flip-vert painter))))
     (below painter2 painter2)))
@@ -9,6 +41,12 @@
       painter
       (let ((smaller (right-split painter (- n 1))))
 	(beside painter (below smaller smaller)))))
+
+(define (up-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (up-split painter (- n 1))))
+	(below painter (beside smaller smaller)))))
 
 (define (corner-split painter n)
   (if (= n 0)
@@ -49,6 +87,30 @@
 				  rotate180 flip-vert)))
     (combine4 (corner-split painter n))))
 
+(define (split op1 op2)
+	(lambda (painter)
+		(op1 (op2 painter))) )
+
+;; now right-split and up-split can be defined as
+;(define right-split (split beside below))
+;(define up-split (split below beside))
+
+;------------------------------------------------------
+
+(load "vector")
+
+(define (make-frame origin edge1 edge2)
+	(list origin edge1 edge2))
+(define origin-frame car)
+(define edge1-frame cadr)
+(define edge2-frame caddr)
+
+;(define (make-frame origin edge1 edge2)
+;	(list origin edge1 edge2))
+;(define origin-frame car)
+;(define edge1-frame cadr)
+;(define edge2-frame cddr)
+
 (define (frame-coord-map frame)
   (lambda (v)
     (add-vect
@@ -57,6 +119,8 @@
 			   (edge1-frame frame))
 	       (scale-vect (ycor-vect v)
 			   (edge2-frame frame))))))
+
+(load "segment")
 
 (define (segments->painter segment-list)
   (lambda (frame)
@@ -90,6 +154,13 @@
 		     (make-vect 1.0 1.0)
 		     (make-vect 0.0 0.0)))
 
+(define (flip-horiz painter)
+	(transform-painter painter
+			(make-vect 1.0 0.0) ; new origin
+			(make-vect 0.0 0.0) ; new end of edge1
+			(make-vect 1.0 1.0))) ; new end of edge2
+			
+
 (define (shrink-to-upper-right painter)
   (transform-painter painter
 		    (make-vect 0.5 0.5)
@@ -102,27 +173,14 @@
 		     (make-vect 1.0 1.0)
 		     (make-vect 0.0 0.0)))
 
+(define (rotate180 painter)
+	(lambda (painter) (rotate90 (rotate90 painter))))
+
 (define (squash-inwards painter)
   (transform-painter painter
 		     (make-vect 0.0 0.0)
 		     (make-vect 0.65 0.35)
 		     (make-vect 0.35 0.65)))
-
-(define (beside painter1 painter2)
-  (let ((split-point (make-vect 0.5 0.0)))
-    (let ((paint-left
-	   (transform-painter painter1
-			      (make-vect 0.0 0.0)
-			      split-point
-			      (make-vect 0.0 1.0)))
-	  (paint-right
-	   (transform-painter painter2
-			      split-point
-			      (make-vect 1.0 0.0)
-			      (make-vect 0.5 1.0))))
-      (lambda (frame)
-	(paint-left frame)
-	(paint-right frame)))))
 
 (define full-frame (make-frame (make-vect -0.5 -0.5)
 			       (make-vect 2 0)
