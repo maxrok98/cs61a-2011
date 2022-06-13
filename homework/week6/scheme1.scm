@@ -63,6 +63,8 @@
 	     (eval-1 (caddr exp))
 	     (eval-1 (cadddr exp))))
 	((lambda-exp? exp) exp)
+	((let-exp? exp) 
+		(apply-1 (list 'lambda (map first (cadr exp)) (caddr exp)) (map (lambda (e) (eval-1 (last e))) (cadr exp)) ))
 	((define-exp? exp)
 	 (eval (list 'define (cadr exp) (maybe-quote (eval-1 (caddr exp))))))
 	((pair? exp) (apply-1 (eval-1 (car exp))      ; eval the operator
@@ -88,7 +90,9 @@
 ;; an expression which we can then evaluate with EVAL-1.
 
 (define (apply-1 proc args)
-  (cond ((procedure? proc)	; use underlying Scheme's APPLY
+  (cond ((map-1? proc)
+		(map-1 (car args) (cdr args)))
+	((procedure? proc)	; use underlying Scheme's APPLY
 	 (apply proc args))
 	((lambda-exp? proc)
 	 (eval-1 (substitute (caddr proc)   ; the body
@@ -97,6 +101,10 @@
 			     '())))	    ; bound-vars, see below
 	(else (error "bad proc: " proc))))
 
+(define (map-1 proc args)
+	(if (null? args)
+			'()
+			(cons (proc (car args)) (map-1 proc (cdr args)))))
 
 ;; Some trivial helper procedures:
 
@@ -110,6 +118,8 @@
 (define if-exp? (exp-checker 'if))
 (define lambda-exp? (exp-checker 'lambda))
 (define define-exp? (exp-checker 'define))
+(define (map-1? proc) (eq? proc 'map-1))
+(define let-exp? (exp-checker 'let))
 
 
 ;; SUBSTITUTE substitutes actual arguments for *free* references to the
