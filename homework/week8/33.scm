@@ -1,0 +1,56 @@
+(define (make-account balance)
+	(define (withdraw amount)
+		(if (>= balance amount)
+			(begin (set! balance (- balance amount))
+				balance)
+			"Insufficient funds"))
+	(define (deposit amount)
+		(set! balance (+ balance amount))
+			balance)
+	(define (dispatch m)
+		(cond ((eq? m 'withdraw) withdraw)
+			((eq? m 'deposit) deposit)
+		(else (error "Unknown request: MAKE-ACCOUNT"
+			m))))
+dispatch)
+
+; 3.3 && 3.4
+(define (make-account-password balance password)
+	(let ((incorrect-pass-attempts 3))
+		(define (withdraw amount)
+			(if (>= balance amount)
+				(begin (set! balance (- balance amount))
+					balance)
+				"Insufficient funds"))
+		(define (deposit amount)
+			(set! balance (+ balance amount))
+				balance)
+		(define (call-the-cops)
+			(error "Call the cops"))
+		(define (dispatch p m)
+			(if (eq? p password)
+				(cond ((eq? m 'withdraw) withdraw)
+					((eq? m 'deposit) deposit)
+					(else (error "Unknown request: MAKE-ACCOUNT"
+						m)))
+				(begin (set! incorrect-pass-attempts (- incorrect-pass-attempts 1))
+					(if (< incorrect-pass-attempts 1)
+						(call-the-cops)
+						(error "Incorrect password")))))
+	dispatch))
+
+; 3.7
+(define (make-joint acc pass new-pass)
+	(define (dispatch p m)
+		(if (eq? p new-pass)
+		  (acc pass m) 
+			(error "Incorrect password")))
+	dispatch)
+
+; 3.8
+(define f
+	(let ((first #t))
+		(lambda (x) 
+			(if first
+				(begin (set! first #f) x)
+				0))))
