@@ -18,11 +18,16 @@
 	((quoted? exp) (text-of-quotation exp))
 	((assignment? exp) (eval-assignment exp env))
 	((definition? exp) (eval-definition exp env))
+	((unbound? exp) (eval-unbound exp env))
 	((if? exp) (eval-if exp env))
 	((lambda? exp)
 	 (make-procedure (lambda-parameters exp)
 			 (lambda-body exp)
 			 env))
+	((let? exp)
+		(mc-eval (let->combination exp) env))
+	((let*? exp)
+		(mc-eval (let*->nested-lets exp) env))
 	((begin? exp) 
 	 (eval-sequence (begin-actions exp) env))
 	((cond? exp) (mc-eval (cond->if exp) env))
@@ -75,6 +80,11 @@
                     env)
   'ok)
 
+(define (eval-unbound exp env)
+  (unbound-variable! (unbound-variable exp)
+                     env)
+  'ok)
+
 ;;;SECTION 4.1.2
 
 (define (self-evaluating? exp)
@@ -106,6 +116,9 @@
 (define (definition? exp)
   (tagged-list? exp 'define))
 
+(define (unbound? exp)
+  (tagged-list? exp 'make-unbound!))
+
 (define (definition-variable exp)
   (if (symbol? (cadr exp))
       (cadr exp)
@@ -117,6 +130,8 @@
       (make-lambda (cdadr exp)
                    (cddr exp))))
 
+(define (unbound-variable exp) (cadr exp))
+
 (define (lambda? exp) (tagged-list? exp 'lambda))
 
 (define (lambda-parameters exp) (cadr exp))
@@ -125,6 +140,29 @@
 (define (make-lambda parameters body)
   (cons 'lambda (cons parameters body)))
 
+; Ex. 4.6
+(define (let? exp) (tagged-list? exp 'let))
+(define (let-vars exp) (cadr exp))
+(define (let-body exp) (cddr exp))
+
+(define (let->combination exp)
+	(cons 
+		(make-lambda (map car (let-vars exp)) (let-body exp))
+		(map cadr (let-vars exp))))
+
+; Ex. 4.7
+(define (make-let bindings body)
+	(cons 'let (cons bindings body)))
+
+(define (let*? exp) (tagged-list? exp 'let*))
+
+(define (let*->nested-lets exp)
+	(define (expand bindings body)
+		(if (null? (cdr bindings))
+			(make-let bindings body)
+			(make-let (list (car bindings)) (list (expand (cdr bindings) body)))))
+	(expand (let-vars exp) (let-body exp)))
+	
 
 (define (if? exp) (tagged-list? exp 'if))
 
@@ -279,6 +317,64 @@
     (scan (frame-variables frame)
           (frame-values frame))))
 
+;; Ex. 4.11
+(define (make-frame variables values)
+	(if (null? variables)
+		'()
+		(cons (cons (car variables) (car values)) (make-frame (cdr variables) (cdr values)))))
+
+(define (add-binding-to-frame! var val frame)
+	(if (null? (cdr frame))
+		(set-cdr! frame (list (cons var val)))
+		(add-binding-to-frame! var val (cdr frame))))
+
+(define (extend-environment vars vals base-env)
+  (if (= (length vars) (length vals))
+      (cons (make-frame vars vals) base-env)
+      (if (< (length vars) (length vals))
+          (error "Too many arguments supplied" vars vals)
+          (error "Too few arguments supplied" vars vals))))
+
+(define (lookup-variable-value var env)
+  (define (env-loop env)
+    (define (scan vars-vals)
+			(let ((bind (assoc var vars-vals)))
+				(if bind
+          (cdr bind)
+          (env-loop (enclosing-environment env)))))
+    (if (eq? env the-empty-environment)
+        (error "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan frame))))
+  (env-loop env))
+
+(define (set-variable-value! var val env)
+  (define (env-loop env)
+    (define (scan vars-vals)
+			(let ((bind (assoc var vars-vals)))
+				(if bind
+          (set-cdr! bind val))
+          (env-loop (enclosing-environment env))))
+    (if (eq? env the-empty-environment)
+        (error "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan frame))))
+  (env-loop env))
+
+(define (define-variable! var val env)
+  (let ((frame (first-frame env)))
+    (define (scan vars-vals)
+			(let ((bind (assoc var vars-vals)))
+				(if bind
+					(set-cdr! bind val)
+					(add-binding-to-frame! var val frame))))
+    (scan frame)))
+
+; Ex. 4.13
+(define (unbound-variable! var env)
+  (let ((frame (first-frame env)))
+		(set-car! env (filter (lambda (bind) (not (eq? (car bind) var))) frame))))
+
 ;;;SECTION 4.1.4
 
 (define (setup-environment)
@@ -294,8 +390,7 @@
 			      (define-variable! name
 				                (list 'primitive (eval name))
 				                the-global-environment)))
-                      initial-env)
-    initial-env))
+                      initial-env) initial-env))
 
 ;[do later] (define the-global-environment (setup-environment))
 
@@ -373,3 +468,7 @@
   (set! the-global-environment (setup-environment))
   (driver-loop))
 
+;; Tests
+;(define en (extend-environment '(a b c) '(1 2 3) (make-frame '(h) '(6))))
+(define en (extend-environment '(a b c) '(1 2 3) the-global-environment))
+(define-variable! 't '7 en)
