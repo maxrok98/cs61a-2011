@@ -3,14 +3,34 @@
 
 ;;; Problem A1   make-line-obj
 
+(define-class (line line-list)
+	(instance-vars (token-n 0))
+	(method (empty?) 
+		(if (= (length line-list) token-n) #t #f))
+	(method (next)
+		(let ((ret (car line-list)))
+			(set! line-list (cdr line-list))
+			(set! token-n (- token-n 1))
+			ret))
+	(method (put-back token)
+		(set! line-list (cons token line-list))
+		(set! token-n (+ token-n 1))))
+
 (define (make-line-obj text)   
-  (error "make-line-obj not written yet!")) 
+	(instantiate (line text)))
 
 
 ;;; Problem A2   logo-type
 
 (define (logo-type val)   
-  (error "logo-type not written yet!")) 
+	(define (continue v)
+		(if (not (empty? (cdr v))) (begin (display " ") (logo-type (cdr v)))))
+	(if (not (list? val)) (display val))
+	(if (pair? (car val)) (begin (display "[")
+															 (logo-type (car val))
+															 (display "]")
+															 (continue val))
+		(begin (display (car val)) (continue val))))
 
 (define (logo-print val)   
   (logo-type val)  
