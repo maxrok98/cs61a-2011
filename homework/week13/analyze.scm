@@ -17,7 +17,7 @@
 ;;**implementation-dependent loading of evaluator file
 ;;Note: It is loaded first so that the section 4.1.7 definition
 ;; of eval overrides the definition from 4.1.1
-(load "61a/Lib/mceval.scm")
+(load "../week12/mceval.scm")
 
 ;;;SECTION 4.1.7
 
@@ -33,6 +33,7 @@
         ((definition? exp) (analyze-definition exp))
         ((if? exp) (analyze-if exp))
         ((lambda? exp) (analyze-lambda exp))
+				((let? exp) (analyze-let exp))
         ((begin? exp) (analyze-sequence (begin-actions exp)))
         ((cond? exp) (analyze (cond->if exp)))
         ((application? exp) (analyze-application exp))
@@ -76,6 +77,12 @@
   (let ((vars (lambda-parameters exp))
         (bproc (analyze-sequence (lambda-body exp))))
     (lambda (env) (make-procedure vars bproc env))))
+
+(define (analyze-let exp)
+  (let* ((vars (let-vars exp))
+        (body (let-body exp))
+				(let->lambda (analyze (cons (make-lambda (map car vars) body) (map cadr vars) ))))
+    (lambda (env) (let->lambda env))))
 
 (define (analyze-sequence exps)
   (define (sequentially proc1 proc2)
