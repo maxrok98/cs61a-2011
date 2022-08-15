@@ -329,7 +329,7 @@
 		(add-binding-to-frame! var val (cdr frame))))
 
 (define (extend-environment vars vals base-env)
-  (if (= (length vars) (length vals))
+  (if (and (= (length vars) (length vals)) (check-types vars vals base-env))
       (cons (make-frame vars vals) base-env)
       (if (< (length vars) (length vals))
           (error "Too many arguments supplied" vars vals)
@@ -375,6 +375,20 @@
   (let ((frame (first-frame env)))
 		(set-car! env (filter (lambda (bind) (not (eq? (car bind) var))) frame))))
 
+; Type checking exercise
+(define (check-types vars vals env)
+	(for-each (lambda (var val) 
+		(if (pair? var)
+			(if (not (mc-apply (mc-eval (car var) env) (list val)))
+				(error "Wrong type argument " val))))
+		vars vals))
+
+(define (make-frame variables values)
+	(if (null? variables)
+		'()
+		(cons (cons (if (pair? (car variables)) (cadar variables) (car variables)) (car values))
+					(make-frame (cdr variables) (cdr values)))))
+
 ;;;SECTION 4.1.4
 
 (define (setup-environment)
@@ -412,6 +426,7 @@
 	(list 'list list)
 	(list 'append append)
 	(list 'equal? equal?)
+	(list 'integer? integer?)
 ;;      more primitives
         ))
 
