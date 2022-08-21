@@ -19,7 +19,10 @@
 ;;; Problem B1    eval-line
 
 (define (eval-line line-obj env)
-  (error "eval-line not written yet!"))
+	(let ((result (logo-eval line-obj env)))
+		(cond ((not (equal? result '=no-value=)) result)
+					((ask line-obj 'empty?) '=no-value=)
+					(else (eval-line line-obj env)))))
 
 
 ;;; Problem 4    variables  (other procedures must be modified, too)
@@ -208,26 +211,26 @@
     (let ((token (ask line-obj 'next)))
       (cond ((self-evaluating? token) token)
             ((variable? token)
-	     (lookup-variable-value (variable-name token) env))
+						 (lookup-variable-value (variable-name token) env))
             ((quoted? token) (text-of-quotation token))
             ((definition? token) (eval-definition line-obj))
-	    ((left-paren? token)
-	     (let ((result (handle-infix (eval-helper #t)
-				       	 line-obj
-				       	 env)))
-	       (let ((token (ask line-obj 'next)))
-	       	 (if (right-paren? token)
-		     result
-		     (error "Too much inside parens")))))
-	    ((right-paren? token)
-	     (error "Unexpected ')'"))
+						((left-paren? token)
+						 (let ((result (handle-infix (eval-helper #t)
+																				 line-obj
+																				 env)))
+							 (let ((token (ask line-obj 'next)))
+								 (if (right-paren? token)
+									 result
+									 (error "Too much inside parens")))))
+						((right-paren? token)
+						 (error "Unexpected ')'"))
             (else
-	     (let ((proc (lookup-procedure token)))
-	       (if (not proc) (error "I don't know how  to " token))
-	       (logo-apply proc
-			   (collect-n-args (arg-count proc)
-					   line-obj
-					   env) ))) )))
+						 (let ((proc (lookup-procedure token)))
+							 (if (not proc) (error "I don't know how  to " token))
+							 (logo-apply proc
+								 (collect-n-args (arg-count proc)
+										 line-obj
+										 env) ))) )))
   (eval-helper #f))
 
 (define (logo-apply procedure arguments)

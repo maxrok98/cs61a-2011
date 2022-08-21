@@ -3,21 +3,35 @@
 
 ;;; Problem A1   make-line-obj
 
-(define-class (line line-list)
-	(instance-vars (token-n 0))
-	(method (empty?) 
-		(if (= (length line-list) token-n) #t #f))
-	(method (next)
-		(let ((ret (car line-list)))
-			(set! line-list (cdr line-list))
-			(set! token-n (- token-n 1))
-			ret))
-	(method (put-back token)
-		(set! line-list (cons token line-list))
-		(set! token-n (+ token-n 1))))
+;(define-class (line line-list)
+;	(instance-vars (token-n 0))
+;	(method (empty?) 
+;		(if (= (length line-list) token-n) #t #f))
+;	(method (next)
+;		(let ((ret (car line-list)))
+;			(set! line-list (cdr line-list))
+;			(set! token-n (- token-n 1))
+;			ret))
+;	(method (put-back token)
+;		(set! line-list (cons token line-list))
+;		(set! token-n (+ token-n 1))))
+
+
+(define-class (line text)
+  (method (empty?) (empty? text))
+  (method (next)
+          (let ((token (car text)))
+            (if token
+              (begin
+                (set! text (cdr text))
+                token)
+              #f)))
+  (method (put-back token)
+          (set! text (cons token text))
+          #t))
 
 (define (make-line-obj text)   
-	(instantiate (line text)))
+	(instantiate line text))
 
 
 ;;; Problem A2   logo-type
@@ -25,12 +39,12 @@
 (define (logo-type val)   
 	(define (continue v)
 		(if (not (empty? (cdr v))) (begin (display " ") (logo-type (cdr v)))))
-	(if (not (list? val)) (display val))
-	(if (pair? (car val)) (begin (display "[")
-															 (logo-type (car val))
-															 (display "]")
-															 (continue val))
-		(begin (display (car val)) (continue val))))
+	(cond ((not (list? val))
+					(display val))
+				((list? (car val))
+					(begin (display "[") (logo-type (car val)) (display "]") (continue val)))
+				(else
+					(begin (display (car val)) (continue val)))))
 
 (define (logo-print val)   
   (logo-type val)  
@@ -69,7 +83,7 @@
 ;;; Problem B2   logo-pred
 
 (define (logo-pred pred)   
-  pred)      ;; This isn't written yet but we fake it for now.
+	(lambda args (if (apply pred args) 'true 'false)))
 
 
 ;;; Here is an example of a Scheme predicate that will be turned into  
